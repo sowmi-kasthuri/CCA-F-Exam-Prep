@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CCA-F Daily</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap');
+  :root {
+    --bg:#080810;--surface:#10101e;--border:#1e1e35;--orange:#f97316;
+    --blue:#3b82f6;--green:#10b981;--red:#ef4444;--purple:#8b5cf6;
+    --text:#e2e8f0;--muted:#64748b;--dim:#1a1a2e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden;}
+
+  /* HEADER */
+  .header{padding:16px 20px 10px;border-bottom:1px solid var(--border);}
+  .header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+  .header-title{font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:#fff;}
+  .header-sub{font-size:10px;color:var(--orange);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+  .streak{text-align:right;font-size:11px;color:var(--muted);}
+  .streak span{display:block;font-size:22px;color:var(--orange);font-family:'Fraunces',serif;}
+
+  /* COUNTDOWN + DAILY Q BANNER */
+  .banner{display:flex;gap:8px;margin-bottom:2px;}
+  .countdown-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center;}
+  .countdown-num{font-family:'Fraunces',serif;font-size:26px;color:var(--orange);line-height:1;}
+  .countdown-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+  .dailyq-box{flex:2;background:var(--dim);border:1px solid var(--purple);border-radius:10px;padding:10px 12px;cursor:pointer;}
+  .dailyq-label{font-size:9px;color:var(--purple);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+  .dailyq-text{font-size:12px;color:var(--text);line-height:1.4;}
+  .dailyq-answer{font-size:11px;color:var(--muted);margin-top:6px;display:none;line-height:1.5;border-top:1px solid var(--border);padding-top:6px;}
+  .dailyq-box.open .dailyq-answer{display:block;}
+  .dailyq-hint{font-size:10px;color:var(--purple);margin-top:4px;}
+
+  /* TABS */
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);}
+  .tab{flex:1;padding:11px 4px;text-align:center;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;}
+  .tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+
+  /* SCREENS */
+  .screen{display:none;padding:16px;}
+  .screen.active{display:block;}
+
+  /* PROGRESS */
+  .progress-wrap{margin-bottom:16px;}
+  .progress-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:5px;letter-spacing:1px;}
+  .progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--orange);border-radius:2px;transition:width 0.4s ease;}
+
+  /* WEAK SPOT BANNER */
+  .weak-banner{background:#ef444410;border:1px solid #ef444433;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+  .weak-banner-text{font-size:11px;color:#f87171;}
+  .weak-banner-count{font-family:'Fraunces',serif;font-size:20px;color:var(--red);}
+  .weak-banner.hidden{display:none;}
+
+  /* FLASHCARD */
+  .card-wrap{perspective:1000px;margin-bottom:16px;min-height:240px;position:relative;}
+  .card{position:relative;min-height:240px;cursor:pointer;transform-style:preserve-3d;transition:transform 0.5s ease;}
+  .card.flipped{transform:rotateY(180deg);}
+  .card-face{position:absolute;width:100%;min-height:240px;backface-visibility:hidden;border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;justify-content:center;}
+  .card-front{background:var(--surface);border:1px solid var(--border);}
+  .card-back{background:var(--dim);border:1px solid var(--purple);transform:rotateY(180deg);}
+  .card-tag{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--orange);margin-bottom:12px;}
+  .card-question{font-family:'Fraunces',serif;font-size:20px;font-weight:300;color:#fff;line-height:1.4;margin-bottom:10px;}
+  .card-hint{font-size:11px;color:var(--muted);margin-top:auto;}
+  .card-answer{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-line;}
+  .card-answer strong{color:var(--purple);display:block;margin-bottom:8px;font-size:10px;letter-spacing:2px;text-transform:uppercase;}
+  .card-mode-label{font-size:9px;color:var(--red);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+
+  /* BUTTONS */
+  .card-actions{display:flex;gap:10px;margin-bottom:12px;}
+  .btn{flex:1;padding:13px;border-radius:10px;border:none;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all 0.15s;text-transform:uppercase;}
+  .btn-wrong{background:#ef444422;border:1px solid #ef444455;color:var(--red);}
+  .btn-right{background:#10b98122;border:1px solid #10b98155;color:var(--green);}
+  .btn-flip{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--muted);margin-bottom:10px;}
+  .btn-drill{width:100%;background:#ef444415;border:1px solid #ef444455;color:var(--red);margin-bottom:10px;}
+  .btn:active{transform:scale(0.97);}
+  .drill-toggle{display:flex;gap:8px;margin-bottom:14px;}
+  .drill-btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;}
+  .drill-btn.active{border-color:var(--orange);color:var(--orange);}
+
+  /* QUIZ */
+  .quiz-question{font-family:'Fraunces',serif;font-size:18px;font-weight:300;color:#fff;line-height:1.5;margin-bottom:8px;}
+  .quiz-scenario{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px;padding:11px;background:var(--surface);border-left:2px solid var(--orange);border-radius:0 8px 8px 0;}
+  .quiz-options{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .quiz-option{padding:13px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-align:left;line-height:1.5;transition:all 0.15s;}
+  .quiz-option:active{transform:scale(0.98);}
+  .quiz-option.correct{border-color:var(--green);background:#10b98115;color:var(--green);}
+  .quiz-option.wrong{border-color:var(--red);background:#ef444415;color:var(--red);}
+  .quiz-option.reveal{border-color:var(--green);background:#10b98115;color:var(--green);}
+  .quiz-option.disabled{pointer-events:none;opacity:0.5;}
+  .explanation{padding:12px;background:var(--dim);border-radius:10px;border:1px solid var(--purple);font-size:12px;color:var(--text);line-height:1.7;margin-bottom:14px;display:none;}
+  .explanation.show{display:block;}
+  .explanation strong{color:var(--purple);}
+  .btn-next{width:100%;background:var(--orange);color:#000;font-weight:500;border:none;display:none;}
+  .btn-next.show{display:block;}
+
+  /* SUMMARY */
+  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:14px;text-align:center;}
+  .summary-score{font-family:'Fraunces',serif;font-size:52px;color:var(--orange);line-height:1;margin-bottom:4px;}
+  .summary-label{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:18px;}
+  .summary-breakdown{display:flex;gap:10px;justify-content:center;}
+  .summary-stat{flex:1;padding:10px;background:var(--dim);border-radius:10px;text-align:center;}
+  .summary-stat-num{font-family:'Fraunces',serif;font-size:26px;margin-bottom:2px;}
+  .summary-stat-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+  .copy-btn{width:100%;padding:13px;background:var(--surface);border:1px solid var(--orange);color:var(--orange);border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-bottom:8px;}
+  .restart-btn{width:100%;padding:13px;background:var(--orange);border:none;color:#000;border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:500;}
+
+  /* CONCEPTS */
+  .concept-list{display:flex;flex-direction:column;gap:8px;}
+  .concept-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  .concept-item.open{border-color:var(--orange);}
+  .concept-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+  .concept-title{font-family:'Fraunces',serif;font-size:15px;color:#fff;}
+  .concept-tag{font-size:9px;color:var(--orange);letter-spacing:2px;text-transform:uppercase;}
+  .concept-body{display:none;margin-top:10px;font-size:12px;color:var(--muted);line-height:1.8;border-top:1px solid var(--border);padding-top:10px;}
+  .concept-item.open .concept-body{display:block;}
+  .watch-out{background:#ef444410;border:1px solid #ef444433;border-radius:10px;padding:11px 13px;font-size:12px;color:#f87171;line-height:1.7;margin-bottom:8px;}
+  .watch-out::before{content:"⚠ ";}
+  .section-title{font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;margin-top:4px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">CCA-F Daily</div>
+      <div class="header-sub">Phase 1 · Agentic Architecture</div>
+    </div>
+    <div class="streak"><span id="streakNum">0</span>day streak</div>
+  </div>
+  <div class="banner">
+    <div class="countdown-box">
+      <div class="countdown-num" id="daysLeft">--</div>
+      <div class="countdown-label">days to exam</div>
+    </div>
+    <div class="dailyq-box" id="dailyqBox" onclick="toggleDailyQ()">
+      <div class="dailyq-label">Today's Question</div>
+      <div class="dailyq-text" id="dailyqText">Loading...</div>
+      <div class="dailyq-hint" id="dailyqHint">Tap to reveal answer ↓</div>
+      <div class="dailyq-answer" id="dailyqAnswer"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('concepts')">Concepts</div>
+  <div class="tab" onclick="switchTab('flash')">Cards</div>
+  <div class="tab" onclick="switchTab('quiz')">Quiz</div>
+</div>
+
+<!-- CONCEPTS -->
+<div class="screen active" id="screen-concepts">
+  <div class="section-title">Key Concepts</div>
+  <div class="concept-list" id="conceptList"></div>
+  <div class="section-title" style="margin-top:18px">Watch-Out Bank</div>
+  <div id="watchOutList"></div>
+</div>
+
+<!-- FLASHCARDS -->
+<div class="screen" id="screen-flash">
+  <div class="drill-toggle">
+    <button class="drill-btn active" id="btnAllCards" onclick="setDrillMode(false)">All Cards</button>
+    <button class="drill-btn" id="btnWeakCards" onclick="setDrillMode(true)">⚠ Weak Spots <span id="weakCount"></span></button>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="flashProgress">Card 1 of 12</span>
+      <span id="flashScore">✓ 0 · ✗ 0</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="flashFill" style="width:0%"></div></div>
+  </div>
+  <div class="card-wrap">
+    <div class="card" id="flashCard" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="card-mode-label" id="cardModeLabel" style="display:none">⚠ Weak Spot</div>
+        <div class="card-tag" id="cardTag">Agent Loop</div>
+        <div class="card-question" id="cardQuestion">Loading...</div>
+        <div class="card-hint">Tap to reveal answer</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-answer">
+          <strong>Answer</strong>
+          <span id="cardAnswer"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-flip" onclick="flipCard()">Flip Card</button>
+  <div class="card-actions" id="cardActions" style="display:none">
+    <button class="btn btn-wrong" onclick="markCard(false)">✗ Needs Work</button>
+    <button class="btn btn-right" onclick="markCard(true)">✓ Got It</button>
+  </div>
+  <div id="noWeakMsg" style="display:none;text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;">
+    No weak spots yet.<br>Mark cards as "Needs Work" to drill them here.
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="screen-quiz">
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="quizProgress">Question 1 of 10</span>
+      <span id="quizScore">Score: 0</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="quizFill" style="width:0%"></div></div>
+  </div>
+  <div id="quizContent">
+    <div class="quiz-question" id="quizQuestion"></div>
+    <div class="quiz-scenario" id="quizScenario" style="display:none"></div>
+    <div class="quiz-options" id="quizOptions"></div>
+    <div class="explanation" id="quizExplanation"></div>
+    <button class="btn btn-next" id="btnNext" onclick="nextQuestion()">Next Question →</button>
+  </div>
+  <div id="quizSummary" style="display:none">
+    <div class="summary-card">
+      <div class="summary-score" id="summaryScore">0%</div>
+      <div class="summary-label">Session Complete</div>
+      <div class="summary-breakdown">
+        <div class="summary-stat"><div class="summary-stat-num" id="statCorrect" style="color:#10b981">0</div><div class="summary-stat-label">Correct</div></div>
+        <div class="summary-stat"><div class="summary-stat-num" id="statWrong" style="color:#ef4444">0</div><div class="summary-stat-label">Wrong</div></div>
+        <div class="summary-stat"><div class="summary-stat-num" id="statTime" style="color:#f97316">0m</div><div class="summary-stat-label">Time</div></div>
+      </div>
+    </div>
+    <button class="copy-btn" onclick="copyResult()">Copy Result for Log</button>
+    <button class="restart-btn" onclick="restartQuiz()">Retake Quiz</button>
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+
+const flashcards = [
+  {id:0, tag:"Agent Loop", q:"What does PRAOR stand for?", a:"Perceive → Reason → Act → Observe → Repeat\n\nMemory aid: 'Pretty Reasonable Actors Often Repeat'\nAnchor: Detective at a crime scene."},
+  {id:1, tag:"Agent Loop", q:"What triggers the agent loop to stop?", a:"A stopping condition must be hit:\n• Goal achieved\n• Iteration limit reached (I)\n• Token budget exceeded (T)\n• Time limit hit (T)\n• Confidence threshold dropped (C)"},
+  {id:2, tag:"Error Types", q:"Name the 3 error types in an agentic system.", a:"1. Recoverable -- retry may work (429, 503, timeout)\n2. Non-Recoverable -- retry won't help (403, 404, 400)\n3. Stuck Loop -- agent doesn't know it's going in circles"},
+  {id:3, tag:"Error Types", q:"Agent gets a 403 error. What should it do?", a:"Do NOT retry. 403 is non-recoverable.\nSkip the resource → log the failure → flag in output → continue with what's available."},
+  {id:4, tag:"Guardrails", q:"Name all 5 guardrails using ITTCE.", a:"I -- Iteration limit (max loop cycles)\nT -- Token budget (cost ceiling)\nT -- Time limit (wall clock timeout)\nC -- Confidence threshold (min certainty)\nE -- Error-type routing (4xx skip · 5xx retry)"},
+  {id:5, tag:"Guardrails", q:"Why must guardrails always be layered?", a:"Relying on one guardrail is fragile. If it fails, nothing catches the agent.\n\nLike a plane with 3 altimeters -- if one fails, others still work."},
+  {id:6, tag:"Single vs Multi", q:"When should you use single-agent architecture?", a:"When the task is:\n• Sequential, not parallel\n• Fits in one context window\n• No specialist expertise needed\n• Failures are easy to recover\n\nRule: Use simplest architecture that works."},
+  {id:7, tag:"Single vs Multi", q:"What are the 4 trigger signals for multi-agent?", a:"Independent tasks\nSpecialist domains\nScale (context overflow)\nSimultaneous execution needed\n\nNote: these are SIGNALS not automatic triggers. Always justify."},
+  {id:8, tag:"Orchestration", q:"What are the 4 communication patterns?", a:"Fire & Forget -- no dependency, walk away\nRequest & Wait -- hard dependency, block\nCallback -- long task, other work available\nFan Out/Fan In -- parallel tasks, collect all"},
+  {id:9, tag:"Orchestration", q:"Fan Out/Fan In always needs what guardrail and why?", a:"Time limit (T in ITTCE).\n\nIf one subagent is slow or fails, the orchestrator must not wait forever. Time limit triggers partial completion or escalation."},
+  {id:10, tag:"Orchestration", q:"What are the 3 failure modes for an orchestrator?", a:"1. Partial Completion -- deliver what you have, flag the gap\n2. Human Escalation -- too critical to proceed, wait\n3. Hard Stop -- pre-defined rule says task is broken\n\nKey: Orchestrator executes rules. Never improvises."},
+  {id:11, tag:"Execution", q:"Optimistic vs Pessimistic execution -- what's the tradeoff?", a:"Optimistic: continue assuming success\n→ Faster UX · Higher cost · Wasted work if upstream fails\n\nPessimistic: wait for upstream\n→ Slower UX · Lower cost · No wasted work\n\nDecide based on failure likelihood + UX priority."},
+];
+
+const quizzes = [
+  {q:"What type of error is a 403 response?",scenario:"An agent tries to fetch a document and receives HTTP 403 Access Denied.",options:["Recoverable -- retry with backoff","Non-Recoverable -- skip and continue","Stuck Loop -- add iteration limit","Transient -- retry once"],correct:1,explanation:"403 is Non-Recoverable. The server is explicitly denying access -- retrying won't change that. Skip, log the failure, continue with available resources."},
+  {q:"Which communication pattern should you use when the orchestrator has other useful work while waiting?",scenario:null,options:["Fire & Forget","Request & Wait","Callback","Fan Out / Fan In"],correct:2,explanation:"Callback. The orchestrator sends the task, continues other work, and the subagent calls back when done. Request & Wait would block unnecessarily."},
+  {q:"A research tool searches 5 databases simultaneously and needs all results before comparing. What pattern is this?",scenario:"Results from all 5 are needed before the orchestrator can pick the best option.",options:["Fire & Forget","Request & Wait (sequential)","Callback","Fan Out / Fan In"],correct:3,explanation:"Fan Out / Fan In. Fire all 5 in parallel, wait for all results. Critical: needs a time limit guardrail or one slow subagent blocks everything."},
+  {q:"A subagent finds flight prices but one site returns prices in EUR instead of INR. It wasn't designed to handle currency conversion. What should it do?",scenario:null,options:["Convert using its own judgment","Return result and flag the currency mismatch to orchestrator","Discard and search another source","Stop and wait for human input"],correct:1,explanation:"Return and flag. A subagent never decides outside its defined scope. The orchestrator has full context and may have a currency converter available."},
+  {q:"Customer support ticket system: categorise, draft, check policy, send. Single or multi-agent?",scenario:"Simple linear process. One ticket at a time. No parallel steps needed.",options:["Multi-agent -- needs specialists for each step","Single agent -- sequential, fits one context, no parallelism","Multi-agent -- for better fault isolation","Depends on ticket volume"],correct:1,explanation:"Single agent. Linear process, fits one context window, no specialist domains. Multi-agent adds unnecessary complexity, overhead, and failure points."},
+  {q:"Name the guardrail that stops an agent when it doesn't know enough to continue safely.",scenario:null,options:["Iteration limit","Token budget","Confidence threshold","Error-type routing"],correct:2,explanation:"Confidence threshold (C in ITTCE). When the agent's certainty drops below minimum, it stops rather than proceeding with wrong decisions."},
+  {q:"An orchestrator encounters an unexpected situation not covered in its original design. What should it do?",scenario:null,options:["Use judgment to decide best course","Execute nearest matching rule","Ask the user what to do","Execute pre-defined failure rules -- escalate if none match"],correct:3,explanation:"Orchestrators execute designer-defined rules -- never improvise. If no rule matches, escalate to human. Improvising = unpredictable + unauditable."},
+  {q:"Which ITTCE guardrail specifically handles 4xx vs 5xx routing?",scenario:null,options:["Iteration limit","Token budget","Time limit","Error-type routing"],correct:3,explanation:"Error-type routing (E in ITTCE). 4xx = non-recoverable, skip or escalate. 5xx = transient, retry with backoff. Without this, agents waste retries on permanently failing requests."},
+  {q:"Two of three subagent results returned. Third failed. The task can complete without it. What failure mode?",scenario:null,options:["Hard Stop -- wait for all three or nothing","Human Escalation -- always escalate on any failure","Partial Completion -- deliver two results, flag the gap","Retry the failed subagent indefinitely"],correct:2,explanation:"Partial Completion. Transparent incomplete output beats full stop. Flag which subagent failed and why. Hard Stop is only when failure breaks the entire task."},
+  {q:"Blog post system: write, check grammar, check SEO, publish. 50 posts/day at 4 mins each. Architecture?",scenario:"Sequential steps. No parallel reviews. 50 posts needed per day.",options:["Multi-agent -- volume justifies parallelism","Single agent -- 200 mins total, well within a day","Multi-agent -- specialist agents for grammar and SEO","Depends on whether grammar and SEO can run in parallel"],correct:1,explanation:"Single agent. 50 x 4 = 200 mins = 3.3 hours. Well within a day sequentially. Multi-agent adds orchestration complexity with no real benefit here."},
+];
+
+const dailyQuestions = [
+  {q:"What does PRAOR stand for?", a:"Perceive → Reason → Act → Observe → Repeat. Memory: 'Pretty Reasonable Actors Often Repeat'"},
+  {q:"A 403 error is recoverable or non-recoverable?", a:"Non-recoverable. Don't retry. Skip, log, continue."},
+  {q:"Name the 5 guardrails using ITTCE.", a:"Iteration limit · Token budget · Time limit · Confidence threshold · Error-type routing"},
+  {q:"Fire & Forget -- when do you use it?", a:"When the orchestrator has no dependency on the result. Send and move on."},
+  {q:"What's the biggest risk of Fan Out / Fan In without a time limit?", a:"One slow subagent blocks the entire orchestrator indefinitely."},
+  {q:"Single prompt = ?", a:"Single responsibility. Multiple specialties = consider separate agents."},
+  {q:"Orchestrator's job when one of 3 subagents fails?", a:"Apply pre-defined failure rule: Partial Completion, Human Escalation, or Hard Stop. Never improvise."},
+  {q:"Optimistic execution -- what's the tradeoff?", a:"Faster UX, higher token cost, wasted work if upstream fails."},
+  {q:"What does a Confidence Threshold guardrail do?", a:"Stops the agent when its certainty drops below minimum. Different from accuracy -- agent can be confidently wrong."},
+  {q:"4 boundaries of a well-designed subagent?", a:"Scope · Data · Time · Failure. Minimum access, minimum scope, minimum runtime."},
+  {q:"'Simultaneously' in an exam question means?", a:"Signal to consider parallelism -- not an automatic multi-agent trigger. Always justify."},
+  {q:"Request & Wait -- when do you use it?", a:"When next step has a hard dependency on the subagent's response. Blocks until result received."},
+  {q:"What's a stuck loop?", a:"Agent keeps retrying without knowing it's going in circles. Prevented by iteration limit and time limit guardrails."},
+  {q:"Callback pattern -- when do you use it?", a:"Long-running subagent task when orchestrator has other useful work to do in parallel."},
+];
+
+const concepts = [
+  {title:"Agent Loop -- PRAOR",tag:"Core",body:"Every agentic system runs this loop until a stopping condition is hit.\n\nPerceive → Reason → Act → Observe → Repeat\n\nMemory aid: \"Pretty Reasonable Actors Often Repeat\"\nReal world anchor: Detective at a crime scene -- walks in, observes, reasons, acts, loops back."},
+  {title:"Error Types",tag:"Core",body:"3 types:\n\n• Recoverable -- retry may work (429, 503, timeout)\n• Non-Recoverable -- retry won't help (403, 404, 400)\n• Stuck Loop -- agent doesn't know it's going in circles\n\nKey rule: 403 = non-recoverable. Skip, don't retry."},
+  {title:"Guardrails -- ITTCE",tag:"Core",body:"Always layered. Never rely on just one.\n\nI -- Iteration limit\nT -- Token budget\nT -- Time limit\nC -- Confidence threshold\nE -- Error-type routing\n\nMemory: \"In This Town, Confidence Earns respect\""},
+  {title:"Single vs Multi-Agent",tag:"Architecture",body:"Single agent: sequential, one context, one domain, simple recovery.\n\nMulti-agent: parallel steps, context overflow, specialist domains, failure isolation needed.\n\nRule: Use the simplest architecture that reliably works.\n\nTrigger signals (not automatic): Independent · Specialist · Scale · Simultaneously"},
+  {title:"Communication Patterns",tag:"Orchestration",body:"Fire & Forget -- shout order, walk away. No dependency on result.\nRequest & Wait -- stand and stare. Hard dependency on response.\nCallback -- give number, go sit. Long task + other work available.\nFan Out/Fan In -- all stations fire, hold tray. Always needs time limit guardrail."},
+  {title:"Failure Modes",tag:"Orchestration",body:"3 modes orchestrator applies based on designer-defined rules:\n\n• Partial Completion -- deliver what you have, flag the gap\n• Human Escalation -- too critical to proceed alone\n• Hard Stop -- pre-defined rule says task is broken\n\nKey: Orchestrator executes rules. Never improvises."},
+  {title:"Execution Strategy",tag:"Design",body:"Optimistic: continue assuming success.\n→ Faster UX · Higher token cost · Wasted work if upstream fails\n\nPessimistic: wait for upstream result.\n→ Slower UX · Lower cost · No wasted work\n\nDecide based on: failure likelihood + UX priority + cost of wasted work."},
+  {title:"Subagent Design -- 4 Boundaries",tag:"Orchestration",body:"Every subagent needs 4 boundaries:\n\nScope -- trusted sources only, least privilege\nData -- no sensitive data it doesn't need\nTime -- respond within limit or fail gracefully\nFailure -- flag anomaly, return to orchestrator, never improvise\n\nPrinciple: Minimum access, minimum scope, minimum runtime."},
+];
+
+const watchOuts = [
+  "403 is non-recoverable -- skip, don't retry",
+  "Parallelism requires truly independent tasks",
+  "'Simultaneously' is a signal, not an automatic multi-agent trigger",
+  "Fan Out / Fan In always needs a time limit guardrail",
+  "Orchestrator executes rules -- never improvises",
+  "Parallel waiting ≠ sequential waiting",
+  "Don't pattern match -- read the full question before answering",
+  "Don't let confident pushback shake a correct answer -- verify reasoning yourself",
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+
+const EXAM_DATE = new Date('2026-08-31');
+let weakSpots = JSON.parse(localStorage.getItem('ccaf_weak') || '[]');
+let drillMode = false;
+let drillQueue = [];
+let flashIdx = 0;
+let flashOrder = [...Array(flashcards.length).keys()];
+let flashCorrect = 0, flashWrong = 0;
+let isFlipped = false;
+let quizIdx = 0, quizCorrect = 0, quizAnswered = false;
+let quizStartTime = Date.now();
+let quizOrder = [...Array(quizzes.length).keys()];
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ─── COUNTDOWN ────────────────────────────────────────────────────────────────
+
+function updateCountdown() {
+  const now = new Date();
+  const diff = Math.ceil((EXAM_DATE - now) / 86400000);
+  document.getElementById('daysLeft').textContent = diff > 0 ? diff : '0';
+}
+
+// ─── STREAK ──────────────────────────────────────────────────────────────────
+
+function updateStreak() {
+  const today = new Date().toDateString();
+  const data = JSON.parse(localStorage.getItem('ccaf_streak') || '{"streak":0,"last":""}');
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (data.last === today) { document.getElementById('streakNum').textContent = data.streak; return; }
+  data.streak = data.last === yesterday ? data.streak + 1 : 1;
+  data.last = today;
+  localStorage.setItem('ccaf_streak', JSON.stringify(data));
+  document.getElementById('streakNum').textContent = data.streak;
+}
+
+// ─── DAILY QUESTION ───────────────────────────────────────────────────────────
+
+function renderDailyQ() {
+  const dayIdx = Math.floor(Date.now() / 86400000) % dailyQuestions.length;
+  const dq = dailyQuestions[dayIdx];
+  document.getElementById('dailyqText').textContent = dq.q;
+  document.getElementById('dailyqAnswer').textContent = dq.a;
+}
+
+function toggleDailyQ() {
+  const box = document.getElementById('dailyqBox');
+  const hint = document.getElementById('dailyqHint');
+  box.classList.toggle('open');
+  hint.textContent = box.classList.contains('open') ? 'Tap to hide ↑' : 'Tap to reveal answer ↓';
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['concepts','flash','quiz'][i] === tab);
+  });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+}
+
+// ─── WEAK SPOTS ───────────────────────────────────────────────────────────────
+
+function saveWeak() { localStorage.setItem('ccaf_weak', JSON.stringify(weakSpots)); }
+
+function updateWeakCount() {
+  const el = document.getElementById('weakCount');
+  if (el) el.textContent = weakSpots.length ? `(${weakSpots.length})` : '';
+}
+
+function setDrillMode(on) {
+  drillMode = on;
+  document.getElementById('btnAllCards').classList.toggle('active', !on);
+  document.getElementById('btnWeakCards').classList.toggle('active', on);
+
+  if (on) {
+    if (weakSpots.length === 0) {
+      document.getElementById('noWeakMsg').style.display = 'block';
+      document.getElementById('flashCard').style.display = 'none';
+      document.getElementById('cardActions').style.display = 'none';
+      document.querySelector('.btn-flip').style.display = 'none';
+      return;
+    }
+    document.getElementById('noWeakMsg').style.display = 'none';
+    document.getElementById('flashCard').style.display = 'block';
+    document.querySelector('.btn-flip').style.display = 'block';
+    drillQueue = shuffle([...weakSpots]);
+    flashIdx = 0;
+  } else {
+    document.getElementById('noWeakMsg').style.display = 'none';
+    document.getElementById('flashCard').style.display = 'block';
+    document.querySelector('.btn-flip').style.display = 'block';
+    flashIdx = 0;
+    shuffle(flashOrder);
+  }
+  flashCorrect = 0; flashWrong = 0;
+  renderFlash();
+}
+
+// ─── FLASHCARDS ───────────────────────────────────────────────────────────────
+
+function getCurrentCard() {
+  if (drillMode) {
+    if (drillQueue.length === 0) return null;
+    const id = drillQueue[flashIdx % drillQueue.length];
+    return flashcards.find(f => f.id === id);
+  }
+  return flashcards[flashOrder[flashIdx]];
+}
+
+function renderFlash() {
+  const card = getCurrentCard();
+  if (!card) return;
+
+  const modeLabel = document.getElementById('cardModeLabel');
+  modeLabel.style.display = drillMode ? 'block' : 'none';
+
+  document.getElementById('cardTag').textContent = card.tag;
+  document.getElementById('cardQuestion').textContent = card.q;
+  document.getElementById('cardAnswer').textContent = card.a;
+  document.getElementById('flashCard').classList.remove('flipped');
+  document.getElementById('cardActions').style.display = 'none';
+  isFlipped = false;
+
+  const total = drillMode ? drillQueue.length : flashcards.length;
+  const curr = (flashIdx % total) + 1;
+  const pct = ((flashIdx % total) / total) * 100;
+  document.getElementById('flashFill').style.width = pct + '%';
+  document.getElementById('flashProgress').textContent = `Card ${curr} of ${total}${drillMode ? ' (weak)' : ''}`;
+  document.getElementById('flashScore').textContent = `✓ ${flashCorrect} · ✗ ${flashWrong}`;
+  updateWeakCount();
+}
+
+function flipCard() {
+  isFlipped = !isFlipped;
+  document.getElementById('flashCard').classList.toggle('flipped', isFlipped);
+  document.getElementById('cardActions').style.display = isFlipped ? 'flex' : 'none';
+}
+
+function markCard(correct) {
+  const card = getCurrentCard();
+  if (!card) return;
+
+  if (!correct) {
+    if (!weakSpots.includes(card.id)) { weakSpots.push(card.id); saveWeak(); }
+  } else {
+    if (drillMode) {
+      weakSpots = weakSpots.filter(id => id !== card.id);
+      saveWeak();
+      drillQueue = drillQueue.filter(id => id !== card.id);
+      if (drillQueue.length === 0) {
+        document.getElementById('noWeakMsg').style.display = 'block';
+        document.getElementById('flashCard').style.display = 'none';
+        document.querySelector('.btn-flip').style.display = 'none';
+        document.getElementById('cardActions').style.display = 'none';
+        return;
+      }
+    }
+  }
+
+  if (correct) flashCorrect++; else flashWrong++;
+  flashIdx++;
+
+  if (!drillMode && flashIdx >= flashcards.length) {
+    flashIdx = 0; shuffle(flashOrder); flashCorrect = 0; flashWrong = 0;
+  }
+  renderFlash();
+}
+
+// ─── QUIZ ─────────────────────────────────────────────────────────────────────
+
+function renderQuiz() {
+  if (quizIdx >= quizzes.length) { showQuizSummary(); return; }
+  const q = quizzes[quizOrder[quizIdx]];
+  quizAnswered = false;
+  document.getElementById('quizContent').style.display = 'block';
+  document.getElementById('quizSummary').style.display = 'none';
+  document.getElementById('quizQuestion').textContent = q.q;
+  const sc = document.getElementById('quizScenario');
+  if (q.scenario) { sc.textContent = q.scenario; sc.style.display = 'block'; } else sc.style.display = 'none';
+  const opts = document.getElementById('quizOptions');
+  opts.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-option';
+    btn.textContent = `${['A','B','C','D'][i]}. ${opt}`;
+    btn.onclick = () => selectAnswer(i);
+    opts.appendChild(btn);
+  });
+  document.getElementById('quizExplanation').className = 'explanation';
+  document.getElementById('btnNext').className = 'btn btn-next';
+  const pct = (quizIdx / quizzes.length) * 100;
+  document.getElementById('quizFill').style.width = pct + '%';
+  document.getElementById('quizProgress').textContent = `Question ${quizIdx + 1} of ${quizzes.length}`;
+  document.getElementById('quizScore').textContent = `Score: ${quizCorrect}`;
+}
+
+function selectAnswer(idx) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const q = quizzes[quizOrder[quizIdx]];
+  const opts = document.querySelectorAll('.quiz-option');
+  opts.forEach((btn, i) => {
+    btn.classList.add('disabled');
+    if (i === q.correct) btn.classList.add('reveal');
+    else if (i === idx && idx !== q.correct) btn.classList.add('wrong');
+  });
+  if (idx === q.correct) quizCorrect++;
+  const exp = document.getElementById('quizExplanation');
+  exp.innerHTML = `<strong>${idx === q.correct ? '✓ Correct' : '✗ Wrong'}</strong> ${q.explanation}`;
+  exp.classList.add('show');
+  document.getElementById('btnNext').classList.add('show');
+  document.getElementById('quizScore').textContent = `Score: ${quizCorrect}`;
+}
+
+function nextQuestion() { quizIdx++; renderQuiz(); }
+
+function showQuizSummary() {
+  document.getElementById('quizContent').style.display = 'none';
+  document.getElementById('quizSummary').style.display = 'block';
+  const pct = Math.round((quizCorrect / quizzes.length) * 100);
+  const mins = Math.round((Date.now() - quizStartTime) / 60000);
+  document.getElementById('summaryScore').textContent = pct + '%';
+  document.getElementById('statCorrect').textContent = quizCorrect;
+  document.getElementById('statWrong').textContent = quizzes.length - quizCorrect;
+  document.getElementById('statTime').textContent = mins + 'm';
+  document.getElementById('quizFill').style.width = '100%';
+}
+
+function copyResult() {
+  const pct = Math.round((quizCorrect / quizzes.length) * 100);
+  const mins = Math.round((Date.now() - quizStartTime) / 60000);
+  const date = new Date().toLocaleDateString('en-IN');
+  const text = `CCA-F Quiz · ${date}\nScore: ${pct}% (${quizCorrect}/${quizzes.length})\nTime: ${mins} mins\nPhase 1 · Sessions 1 & 2`;
+  navigator.clipboard.writeText(text).then(() => {
+    document.querySelector('.copy-btn').textContent = '✓ Copied!';
+    setTimeout(() => document.querySelector('.copy-btn').textContent = 'Copy Result for Log', 2000);
+  });
+}
+
+function restartQuiz() {
+  quizIdx = 0; quizCorrect = 0; quizAnswered = false;
+  quizStartTime = Date.now(); shuffle(quizOrder); renderQuiz();
+}
+
+// ─── CONCEPTS ─────────────────────────────────────────────────────────────────
+
+function renderConcepts() {
+  const list = document.getElementById('conceptList');
+  list.innerHTML = '';
+  concepts.forEach((c, i) => {
+    const div = document.createElement('div');
+    div.className = 'concept-item';
+    div.innerHTML = `
+      <div class="concept-header" onclick="toggleConcept(${i})">
+        <div class="concept-title">${c.title}</div>
+        <div class="concept-tag">${c.tag}</div>
+      </div>
+      <div class="concept-body">${c.body.replace(/\n/g,'<br>')}</div>`;
+    list.appendChild(div);
+  });
+  const wlist = document.getElementById('watchOutList');
+  wlist.innerHTML = '';
+  watchOuts.forEach(w => {
+    const div = document.createElement('div');
+    div.className = 'watch-out';
+    div.textContent = w;
+    wlist.appendChild(div);
+  });
+}
+
+function toggleConcept(i) {
+  document.querySelectorAll('.concept-item')[i].classList.toggle('open');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
+shuffle(flashOrder);
+shuffle(quizOrder);
+updateCountdown();
+updateStreak();
+renderDailyQ();
+renderFlash();
+renderConcepts();
+renderQuiz();
+updateWeakCount();
+</script>
+</body>
+</html>
