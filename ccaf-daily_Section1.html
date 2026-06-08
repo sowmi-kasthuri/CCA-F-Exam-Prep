@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CCA-F Daily</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap');
+  :root {
+    --bg:#080810;--surface:#10101e;--border:#1e1e35;--orange:#f97316;
+    --blue:#3b82f6;--green:#10b981;--red:#ef4444;--purple:#8b5cf6;
+    --text:#e2e8f0;--muted:#64748b;--dim:#1a1a2e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden;}
+  .header{padding:16px 20px 10px;border-bottom:1px solid var(--border);}
+  .header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+  .header-title{font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:#fff;}
+  .header-sub{font-size:10px;color:var(--orange);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+  .streak{text-align:right;font-size:11px;color:var(--muted);}
+  .streak span{display:block;font-size:22px;color:var(--orange);font-family:'Fraunces',serif;}
+  .banner{display:flex;gap:8px;margin-bottom:2px;}
+  .countdown-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center;}
+  .countdown-num{font-family:'Fraunces',serif;font-size:26px;color:var(--orange);line-height:1;}
+  .countdown-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+  .dailyq-box{flex:2;background:var(--dim);border:1px solid var(--purple);border-radius:10px;padding:10px 12px;cursor:pointer;}
+  .dailyq-label{font-size:9px;color:var(--purple);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+  .dailyq-text{font-size:12px;color:var(--text);line-height:1.4;}
+  .dailyq-answer{font-size:11px;color:var(--muted);margin-top:6px;display:none;line-height:1.5;border-top:1px solid var(--border);padding-top:6px;}
+  .dailyq-box.open .dailyq-answer{display:block;}
+  .dailyq-hint{font-size:10px;color:var(--purple);margin-top:4px;}
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);}
+  .tab{flex:1;padding:11px 4px;text-align:center;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;}
+  .tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+  .screen{display:none;padding:16px;}
+  .screen.active{display:block;}
+  .progress-wrap{margin-bottom:16px;}
+  .progress-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:5px;letter-spacing:1px;}
+  .progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--orange);border-radius:2px;transition:width 0.4s ease;}
+  .card-wrap{perspective:1000px;margin-bottom:16px;min-height:240px;position:relative;}
+  .card{position:relative;min-height:240px;cursor:pointer;transform-style:preserve-3d;transition:transform 0.5s ease;}
+  .card.flipped{transform:rotateY(180deg);}
+  .card-face{position:absolute;width:100%;min-height:240px;backface-visibility:hidden;border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;justify-content:center;}
+  .card-front{background:var(--surface);border:1px solid var(--border);}
+  .card-back{background:var(--dim);border:1px solid var(--purple);transform:rotateY(180deg);}
+  .card-tag{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--orange);margin-bottom:12px;}
+  .card-question{font-family:'Fraunces',serif;font-size:20px;font-weight:300;color:#fff;line-height:1.4;margin-bottom:10px;}
+  .card-hint{font-size:11px;color:var(--muted);margin-top:auto;}
+  .card-answer{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-line;}
+  .card-answer strong{color:var(--purple);display:block;margin-bottom:8px;font-size:10px;letter-spacing:2px;text-transform:uppercase;}
+  .card-mode-label{font-size:9px;color:var(--red);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+  .card-actions{display:flex;gap:10px;margin-bottom:12px;}
+  .btn{flex:1;padding:13px;border-radius:10px;border:none;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all 0.15s;text-transform:uppercase;}
+  .btn-wrong{background:#ef444422;border:1px solid #ef444455;color:var(--red);}
+  .btn-right{background:#10b98122;border:1px solid #10b98155;color:var(--green);}
+  .btn-flip{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--muted);margin-bottom:10px;}
+  .btn:active{transform:scale(0.97);}
+  .drill-toggle{display:flex;gap:8px;margin-bottom:14px;}
+  .drill-btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;}
+  .drill-btn.active{border-color:var(--orange);color:var(--orange);}
+  .quiz-question{font-family:'Fraunces',serif;font-size:18px;font-weight:300;color:#fff;line-height:1.5;margin-bottom:8px;}
+  .quiz-scenario{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px;padding:11px;background:var(--surface);border-left:2px solid var(--orange);border-radius:0 8px 8px 0;}
+  .quiz-options{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .quiz-option{padding:13px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-align:left;line-height:1.5;transition:all 0.15s;}
+  .quiz-option:active{transform:scale(0.98);}
+  .quiz-option.correct{border-color:var(--green);background:#10b98115;color:var(--green);}
+  .quiz-option.wrong{border-color:var(--red);background:#ef444415;color:var(--red);}
+  .quiz-option.reveal{border-color:var(--green);background:#10b98115;color:var(--green);}
+  .quiz-option.disabled{pointer-events:none;opacity:0.5;}
+  .explanation{padding:12px;background:var(--dim);border-radius:10px;border:1px solid var(--purple);font-size:12px;color:var(--text);line-height:1.7;margin-bottom:14px;display:none;}
+  .explanation.show{display:block;}
+  .explanation strong{color:var(--purple);}
+  .btn-next{width:100%;background:var(--orange);color:#000;font-weight:500;border:none;display:none;}
+  .btn-next.show{display:block;}
+  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:14px;text-align:center;}
+  .summary-score{font-family:'Fraunces',serif;font-size:52px;color:var(--orange);line-height:1;margin-bottom:4px;}
+  .summary-label{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:18px;}
+  .summary-breakdown{display:flex;gap:10px;justify-content:center;}
+  .summary-stat{flex:1;padding:10px;background:var(--dim);border-radius:10px;text-align:center;}
+  .summary-stat-num{font-family:'Fraunces',serif;font-size:26px;margin-bottom:2px;}
+  .summary-stat-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+  .copy-btn{width:100%;padding:13px;background:var(--surface);border:1px solid var(--orange);color:var(--orange);border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-bottom:8px;}
+  .restart-btn{width:100%;padding:13px;background:var(--orange);border:none;color:#000;border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:500;}
+  .concept-list{display:flex;flex-direction:column;gap:8px;}
+  .concept-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  .concept-item.open{border-color:var(--orange);}
+  .concept-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+  .concept-title{font-family:'Fraunces',serif;font-size:15px;color:#fff;}
+  .concept-tag{font-size:9px;color:var(--orange);letter-spacing:2px;text-transform:uppercase;}
+  .concept-body{display:none;margin-top:10px;font-size:13px;color:#c4cdd8;line-height:1.9;border-top:1px solid var(--border);padding-top:12px;}
+  .concept-item.open .concept-body{display:block;}
+  .concept-body .key{color:var(--orange);font-weight:500;}
+  .concept-body .rule{background:var(--dim);border-left:2px solid var(--orange);padding:8px 12px;border-radius:0 8px 8px 0;margin:8px 0;font-size:12px;line-height:1.7;}
+  .concept-body .sub{color:var(--muted);font-size:12px;margin-top:4px;}
+  .watch-out{background:#ef444410;border:1px solid #ef444433;border-radius:10px;padding:11px 13px;font-size:12px;color:#f87171;line-height:1.7;margin-bottom:8px;}
+  .watch-out::before{content:"⚠ ";}
+  .section-title{font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;margin-top:4px;}
+  #noWeakMsg{display:none;text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">CCA-F Daily</div>
+      <div class="header-sub">Phase 1 · Agentic Architecture</div>
+    </div>
+    <div class="streak"><span id="streakNum">0</span>day streak</div>
+  </div>
+  <div class="banner">
+    <div class="countdown-box">
+      <div class="countdown-num" id="daysLeft">--</div>
+      <div class="countdown-label">days to exam</div>
+    </div>
+    <div class="dailyq-box" id="dailyqBox" onclick="toggleDailyQ()">
+      <div class="dailyq-label">Today's Question</div>
+      <div class="dailyq-text" id="dailyqText">Loading...</div>
+      <div class="dailyq-hint" id="dailyqHint">Tap to reveal answer ↓</div>
+      <div class="dailyq-answer" id="dailyqAnswer"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('concepts')">Concepts</div>
+  <div class="tab" onclick="switchTab('flash')">Cards</div>
+  <div class="tab" onclick="switchTab('quiz')">Quiz</div>
+</div>
+
+<!-- CONCEPTS -->
+<div class="screen active" id="screen-concepts">
+  <div class="section-title">Key Concepts</div>
+  <div class="concept-list" id="conceptList"></div>
+  <div class="section-title" style="margin-top:18px">Watch-Out Bank</div>
+  <div id="watchOutList"></div>
+</div>
+
+<!-- FLASHCARDS -->
+<div class="screen" id="screen-flash">
+  <div class="drill-toggle">
+    <button class="drill-btn active" id="btnAllCards" onclick="setDrillMode(false)">All Cards</button>
+    <button class="drill-btn" id="btnWeakCards" onclick="setDrillMode(true)">⚠ Weak Spots <span id="weakCount"></span></button>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="flashProgress">Card 1 of 12</span>
+      <span id="flashScore">✓ 0 · ✗ 0</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="flashFill" style="width:0%"></div></div>
+  </div>
+  <div class="card-wrap">
+    <div class="card" id="flashCard" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="card-mode-label" id="cardModeLabel" style="display:none">⚠ Weak Spot</div>
+        <div class="card-tag" id="cardTag"></div>
+        <div class="card-question" id="cardQuestion"></div>
+        <div class="card-hint">Tap to reveal answer</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-answer">
+          <strong>Answer</strong>
+          <span id="cardAnswer"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-flip" onclick="flipCard()">Flip Card</button>
+  <div class="card-actions" id="cardActions" style="display:none">
+    <button class="btn btn-wrong" onclick="markCard(false)">✗ Needs Work</button>
+    <button class="btn btn-right" onclick="markCard(true)">✓ Got It</button>
+  </div>
+  <div id="noWeakMsg">No weak spots yet.<br>Mark cards as "Needs Work" to drill them here.</div>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="screen-quiz">
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="quizProgress">Question 1 of 10</span>
+      <span id="quizScore">Score: 0</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="quizFill" style="width:0%"></div></div>
+  </div>
+  <div id="quizContent">
+    <div class="quiz-question" id="quizQuestion"></div>
+    <div class="quiz-scenario" id="quizScenario" style="display:none"></div>
+    <div class="quiz-options" id="quizOptions"></div>
+    <div class="explanation" id="quizExplanation"></div>
+    <button class="btn btn-next" id="btnNext" onclick="nextQuestion()">Next Question →</button>
+  </div>
+  <div id="quizSummary" style="display:none">
+    <div class="summary-card">
+      <div class="summary-score" id="summaryScore">0%</div>
+      <div class="summary-label">Session Complete</div>
+      <div class="summary-breakdown">
+        <div class="summary-stat"><div class="summary-stat-num" id="statCorrect" style="color:#10b981">0</div><div class="summary-stat-label">Correct</div></div>
+        <div class="summary-stat"><div class="summary-stat-num" id="statWrong" style="color:#ef4444">0</div><div class="summary-stat-label">Wrong</div></div>
+        <div class="summary-stat"><div class="summary-stat-num" id="statTime" style="color:#f97316">0m</div><div class="summary-stat-label">Time</div></div>
+      </div>
+    </div>
+    <button class="copy-btn" onclick="copyResult()">Copy Result for Log</button>
+    <button class="restart-btn" onclick="restartQuiz()">Retake Quiz</button>
+  </div>
+</div>
+
+<script>
+const flashcards = [
+  {id:0,tag:"Agent Loop",q:"What does PRAOR stand for and what does each letter mean?",a:"P -- Perceive: read context and available tools\nR -- Reason: decide what to do next\nA -- Act: call a tool or produce output\nO -- Observe: receive the result of that action\nR -- Repeat: loop until goal is met or a stopping condition is hit"},
+  {id:1,tag:"Agent Loop",q:"What are the five stopping conditions that can end an agent loop?",a:"1. Goal achieved -- task is complete\n2. Iteration limit hit -- max loop cycles reached\n3. Token budget exhausted -- cost ceiling hit\n4. Time limit exceeded -- wall clock timeout\n5. Confidence threshold dropped -- agent too uncertain to continue safely"},
+  {id:2,tag:"Error Types",q:"What are the three error types in an agentic system and what triggers each?",a:"Recoverable: temporary failures where retry may work -- 429 rate limit, 503 service unavailable, network timeout\nNon-Recoverable: permanent failures where retry won't help -- 403 access denied, 404 not found, 400 bad request\nStuck Loop: agent continues retrying without knowing it has been going in circles"},
+  {id:3,tag:"Error Types",q:"An agent receives a 403 error fetching a document. List every action it should take in order.",a:"1. Do NOT retry -- 403 is non-recoverable, retrying wastes tokens\n2. Log the failure -- record which resource failed and why\n3. Skip and continue -- move on using whatever resources are still available\n4. Flag in output -- surface the gap transparently so the user knows the result is incomplete"},
+  {id:4,tag:"Guardrails",q:"Name all five guardrails in ITTCE order and explain what each one stops.",a:"I -- Iteration limit: stops runaway loops by capping total cycle count\nT -- Token budget: stops excessive cost by capping total tokens consumed\nT -- Time limit: stops indefinite runtime by enforcing a wall clock ceiling\nC -- Confidence threshold: stops unsafe continuation when agent certainty drops too low\nE -- Error-type routing: stops wasted retries by routing 4xx to skip and 5xx to retry"},
+  {id:5,tag:"Guardrails",q:"Why must guardrails always be layered and never single?",a:"A single guardrail is a single point of failure. If the iteration limit is the only guardrail and it is set too high, a runaway agent burns tokens and time before stopping. Layered guardrails work independently -- if one fails or is misconfigured, others still catch the agent. Redundancy is the principle, not caution."},
+  {id:6,tag:"Single vs Multi",q:"List the four conditions that justify multi-agent architecture.",a:"1. Tasks are truly independent and can run in parallel\n2. Task requires specialist expertise at different stages that one prompt cannot reliably serve\n3. Task exceeds what fits in a single context window\n4. Failure isolation is needed -- one component failing must not bring down the whole system"},
+  {id:7,tag:"Single vs Multi",q:"What is the core design principle when choosing between single and multi-agent?",a:"Use the simplest architecture that reliably solves the problem. Multi-agent adds orchestration overhead, more failure points, higher token cost, and harder debugging. If a single agent can do the job, that is the right answer. Complexity must be justified by a concrete requirement, not preference."},
+  {id:8,tag:"Orchestration",q:"Describe all four communication patterns and when each is appropriate.",a:"Fire & Forget: send task, move on, no dependency on result. Use when outcome does not affect next steps.\nRequest & Wait: send task, block until response. Use when next step has a hard dependency on this result.\nCallback: send task, continue other work, subagent calls back when done. Use for long-running tasks when orchestrator has parallel work.\nFan Out / Fan In: fire multiple subagents simultaneously, collect all results before proceeding. Use when tasks are independent and all results are needed."},
+  {id:9,tag:"Orchestration",q:"Fan Out / Fan In always requires which guardrail and what happens without it?",a:"Time limit is mandatory. Without it, one slow or failed subagent blocks the orchestrator indefinitely. The orchestrator waits forever, the system stalls, and no output is produced. The time limit forces the orchestrator to proceed with whatever results are available after the defined window, triggering partial completion or escalation."},
+  {id:10,tag:"Orchestration",q:"What are the three failure modes an orchestrator can apply and when is each appropriate?",a:"Partial Completion: two of three subagents succeeded, task can be delivered with a gap flagged. Use when failure does not break the core output.\nHuman Escalation: failure is too critical or ambiguous to proceed without input. Use when the system cannot make a safe decision alone.\nHard Stop: a pre-defined rule states this specific failure breaks the entire task. Use when continuing would produce dangerously incorrect output."},
+  {id:11,tag:"Execution",q:"What is the difference between optimistic and pessimistic execution and what drives the choice?",a:"Optimistic: continue processing assuming upstream will succeed. Faster user experience, higher token cost, wasted work if upstream fails.\nPessimistic: wait for upstream result before continuing. Slower user experience, lower token cost, no wasted work.\nThe choice depends on three factors: how likely the upstream task is to fail, how much speed matters to the user, and how costly it is to discard wasted work."},
+];
+
+const quizzes = [
+  {q:"What type of error is a 403 response?",scenario:"An agent tries to fetch a document and receives HTTP 403 Access Denied.",options:["Recoverable -- retry with backoff","Non-Recoverable -- skip and continue","Stuck Loop -- add iteration limit","Transient -- retry once"],correct:1,explanation:"403 is Non-Recoverable. The server is explicitly denying access -- retrying will not change that. The agent should skip, log the failure, and continue with available resources."},
+  {q:"Which communication pattern should you use when the orchestrator has other useful work while waiting?",scenario:null,options:["Fire & Forget","Request & Wait","Callback","Fan Out / Fan In"],correct:2,explanation:"Callback. The orchestrator sends the task, continues other work, and the subagent calls back when done. Request & Wait would block the orchestrator unnecessarily."},
+  {q:"A research tool searches 5 databases simultaneously and needs all results before comparing. What pattern is this?",scenario:"All 5 results are needed before the orchestrator can pick the best option.",options:["Fire & Forget","Request & Wait sequential","Callback","Fan Out / Fan In"],correct:3,explanation:"Fan Out / Fan In. Fire all 5 in parallel, wait for all results before proceeding. This always requires a time limit guardrail or one slow subagent blocks everything."},
+  {q:"A subagent finds flight prices but one site returns EUR instead of INR. It was not designed for currency conversion. What should it do?",scenario:null,options:["Convert using its own judgment","Return result and flag the currency mismatch to the orchestrator","Discard and search another source","Stop and wait for human input"],correct:1,explanation:"Return and flag. A subagent never makes decisions outside its defined scope. The orchestrator has full context and may have a currency converter available. Discarding valid data is wasteful."},
+  {q:"Customer support: categorise ticket, draft response, check policy, send. Single or multi-agent?",scenario:"Simple linear process. One ticket at a time. No parallel steps needed.",options:["Multi-agent -- needs specialists for each step","Single agent -- sequential, fits one context, no parallelism","Multi-agent -- for better fault isolation","Depends on ticket volume"],correct:1,explanation:"Single agent. The process is linear, fits in one context window, and needs no specialist domains. Multi-agent adds unnecessary complexity, coordination overhead, and failure points."},
+  {q:"Name the guardrail that stops an agent when it does not know enough to continue safely.",scenario:null,options:["Iteration limit","Token budget","Confidence threshold","Error-type routing"],correct:2,explanation:"Confidence threshold. When the agent's certainty about the next action drops below a minimum level, it stops. This is different from accuracy -- an agent can be confidently wrong. Confidence threshold stops uncertainty, not incorrectness."},
+  {q:"An orchestrator encounters an unexpected situation not covered in its original design. What should it do?",scenario:null,options:["Use its own judgment to decide the best course","Execute the nearest matching pre-defined rule","Ask the user directly","Execute pre-defined failure rules and escalate if none match"],correct:3,explanation:"Orchestrators execute designer-defined rules only. They never improvise. If no rule matches the situation, escalate to human. An improvising orchestrator produces unpredictable behavior that cannot be debugged or audited."},
+  {q:"Which ITTCE guardrail specifically handles 4xx vs 5xx routing decisions?",scenario:null,options:["Iteration limit","Token budget","Time limit","Error-type routing"],correct:3,explanation:"Error-type routing, the E in ITTCE. 4xx errors are non-recoverable -- skip or escalate. 5xx errors are transient -- retry with backoff. Without this guardrail, agents waste retries on requests that will never succeed."},
+  {q:"Two of three subagent results returned. The third failed. The task can complete without it. Which failure mode?",scenario:null,options:["Hard Stop -- wait for all three or deliver nothing","Human Escalation -- always escalate on any failure","Partial Completion -- deliver two results and flag the gap","Retry the failed subagent indefinitely"],correct:2,explanation:"Partial Completion. Transparent incomplete output is better than a full stop. The orchestrator flags which subagent failed and why. Hard Stop is reserved for failures that make the entire output unusable."},
+  {q:"Blog post system: write, check grammar, check SEO, publish. 50 posts per day at 4 minutes each. Architecture?",scenario:"Sequential steps. No parallel reviews. 50 posts needed per day.",options:["Multi-agent -- volume justifies parallelism","Single agent -- 200 minutes total, well within a day","Multi-agent -- specialist agents for grammar and SEO","Depends on whether grammar and SEO can run in parallel"],correct:1,explanation:"Single agent. 50 times 4 equals 200 minutes, which is 3.3 hours. Well within a day running sequentially. Multi-agent adds orchestration complexity with no real benefit at this volume."},
+];
+
+const dailyQuestions = [
+  {q:"What does PRAOR stand for?",a:"Perceive, Reason, Act, Observe, Repeat. The five steps of the agent loop that run continuously until a stopping condition is hit."},
+  {q:"A 403 error -- recoverable or non-recoverable?",a:"Non-recoverable. The server is denying access permanently. Retrying will not change the result. Skip, log the failure, and continue."},
+  {q:"Name all five guardrails using ITTCE.",a:"Iteration limit, Token budget, Time limit, Confidence threshold, Error-type routing."},
+  {q:"Fire and Forget -- when do you use it?",a:"When the orchestrator has no dependency on the result of the task. Send the instruction and move on without waiting."},
+  {q:"What is the biggest risk of Fan Out / Fan In without a time limit?",a:"One slow or failed subagent blocks the orchestrator indefinitely. The system stalls and produces no output until that subagent responds."},
+  {q:"Single prompt equals what design principle?",a:"Single responsibility. When a task requires multiple specialist domains, consider separate agents rather than one overloaded prompt."},
+  {q:"What does an orchestrator do when one of three subagents fails?",a:"It applies a pre-defined failure rule -- Partial Completion, Human Escalation, or Hard Stop. It never improvises or makes judgment calls at runtime."},
+  {q:"Optimistic execution -- what is the core tradeoff?",a:"Faster user experience and higher token cost. You continue processing assuming upstream will succeed, accepting that work may be wasted if it fails."},
+  {q:"What does a Confidence Threshold guardrail do?",a:"It stops the agent when its self-assessed certainty about the next action drops below a minimum level. Note: this measures uncertainty, not incorrectness."},
+  {q:"Name the four boundaries of a well-designed subagent.",a:"Scope boundary, Data boundary, Time boundary, and Failure boundary. Together they enforce minimum access, minimum scope, and minimum runtime."},
+  {q:"What does simultaneously in an exam question signal?",a:"It signals to consider parallelism -- but it is not an automatic trigger for multi-agent. You must still justify whether parallelism is actually required."},
+  {q:"Request and Wait -- when do you use it?",a:"When the next step has a hard dependency on the subagent's response. The orchestrator blocks until the result is received before proceeding."},
+  {q:"What is a stuck loop and how do you prevent it?",a:"A stuck loop is when an agent keeps retrying without knowing it is going in circles. Prevented by iteration limit and time limit guardrails working together."},
+  {q:"Callback pattern -- when do you use it?",a:"When the subagent task is long-running and the orchestrator has other useful work it can do in parallel rather than blocking."},
+];
+
+const concepts = [
+  {
+    title:"Agent Loop -- PRAOR",
+    tag:"Core",
+    body:`<p>The agent loop is the fundamental execution model of every agentic system. It runs continuously until a stopping condition is triggered.</p>
+<p style="margin-top:10px"><span class="key">Perceive</span> — The agent reads its full context: the goal, available tools, prior results, and any system instructions. This is passive intake only — no decisions are made here.</p>
+<p style="margin-top:8px"><span class="key">Reason</span> — The agent decides what to do next based on what it perceived. This is where Claude's language model capability is applied — interpreting the situation and selecting the next action.</p>
+<p style="margin-top:8px"><span class="key">Act</span> — The agent executes the chosen action. This could be calling a tool, writing output, querying an API, or spawning a subagent. The action produces a result.</p>
+<p style="margin-top:8px"><span class="key">Observe</span> — The agent receives the result of its action and adds it to context. Errors, partial results, and unexpected outputs are all observed here before the next cycle begins.</p>
+<p style="margin-top:8px"><span class="key">Repeat</span> — The loop starts again from Perceive, now with updated context. This continues until the goal is achieved or a guardrail triggers a stop.</p>
+<div class="rule">The loop has no built-in stopping mechanism. Without explicitly designed guardrails, it will run indefinitely.</div>`
+  },
+  {
+    title:"Error Types",
+    tag:"Core",
+    body:`<p>Three distinct error types exist in agentic systems. The correct response differs completely for each, so misclassifying an error leads to wasted resources or missed recovery opportunities.</p>
+<p style="margin-top:10px"><span class="key">Recoverable Errors</span> — Temporary conditions where the situation may change if the agent waits and retries. The server was overloaded, the network timed out, or a rate limit was hit. Examples: 429 Too Many Requests, 503 Service Unavailable, network timeouts. The correct response is retry with exponential backoff — wait progressively longer between attempts.</p>
+<p style="margin-top:8px"><span class="key">Non-Recoverable Errors</span> — Permanent conditions where retrying will produce the same result. The agent lacks permission, the resource does not exist, or the request is malformed. Examples: 403 Forbidden, 404 Not Found, 400 Bad Request. The correct response is skip, log, and continue. Retrying wastes tokens and time.</p>
+<p style="margin-top:8px"><span class="key">Stuck Loop</span> — The agent keeps executing without knowing it is making no progress. Unlike the other two types, this is not signalled by an error code — the agent believes it is working normally. It is detected only by external guardrails watching for repetitive behavior or excessive iteration.</p>
+<div class="rule">403 is non-recoverable. This is a common exam trap. Do not retry it.</div>`
+  },
+  {
+    title:"Guardrails -- ITTCE",
+    tag:"Core",
+    body:`<p>Guardrails are stopping conditions designed into an agent before it runs. They exist because the agent loop has no built-in limit. Without guardrails, a single misconfigured agent can consume unlimited tokens, run indefinitely, or produce harmful output.</p>
+<div class="rule">Guardrails must always be layered. A single guardrail is a single point of failure. Multiple independent guardrails mean that if one is misconfigured or bypassed, others still catch the agent.</div>
+<p style="margin-top:10px"><span class="key">I — Iteration Limit</span> — Sets a hard ceiling on the number of times the loop can execute. Prevents runaway loops regardless of what the agent is doing.</p>
+<p style="margin-top:8px"><span class="key">T — Token Budget</span> — Sets a cost ceiling. Stops the agent when accumulated token usage crosses a defined threshold. Protects against unexpectedly expensive runs.</p>
+<p style="margin-top:8px"><span class="key">T — Time Limit</span> — Sets a wall clock timeout. Stops the agent after a defined duration regardless of progress. Essential for Fan Out / Fan In patterns where one slow subagent would otherwise block everything.</p>
+<p style="margin-top:8px"><span class="key">C — Confidence Threshold</span> — Stops the agent when its self-assessed certainty about the next action drops below a minimum level. This measures uncertainty, not accuracy. An agent can be confidently wrong and still pass this check.</p>
+<p style="margin-top:8px"><span class="key">E — Error-type Routing</span> — Routes different error classes to different handlers. 4xx errors trigger skip or escalation. 5xx errors trigger retry with backoff. Without this, agents waste retries on requests that will never succeed.</p>`
+  },
+  {
+    title:"Single vs Multi-Agent",
+    tag:"Architecture",
+    body:`<p>Choosing the wrong architecture is one of the most common design mistakes. Multi-agent adds real costs: orchestration overhead, more failure points, harder debugging, and higher token spend. These costs must be justified by a concrete requirement.</p>
+<div class="rule">Use the simplest architecture that reliably solves the problem. If a single agent can do the job, that is the correct answer.</div>
+<p style="margin-top:10px"><span class="key">Single Agent</span> — Appropriate when the task is sequential, fits within one context window, requires no specialist expertise at different stages, and failures are straightforward to recover from.</p>
+<p style="margin-top:8px"><span class="key">Multi-Agent</span> — Justified when tasks are truly independent and can run in parallel, when the task requires specialist prompts at different stages, when the total context exceeds a single window, or when failure isolation is required so one component failing does not break the whole system.</p>
+<p style="margin-top:10px"><span class="key">Trigger signals to consider</span> — Independent tasks, specialist domains, scale beyond one context window, simultaneous execution. These are signals to evaluate, not automatic triggers. You must still verify that the complexity is justified.</p>
+<p style="margin-top:8px"><span class="key">Single prompt rule</span> — A single, well-structured prompt with a single responsibility is often sufficient for tasks that appear to need multiple agents. Only move to multi-agent when the prompt genuinely cannot serve the requirement.</p>`
+  },
+  {
+    title:"Communication Patterns",
+    tag:"Orchestration",
+    body:`<p>Communication patterns define how an orchestrator passes work to subagents and receives results back. Choosing the wrong pattern blocks the orchestrator, loses results, or creates unnecessary waiting.</p>
+<p style="margin-top:10px"><span class="key">Fire and Forget</span> — The orchestrator sends a task and moves on immediately without waiting for a response. Use this when the result of the task has no effect on what the orchestrator does next. Risk: the orchestrator never knows if the task succeeded or failed.</p>
+<p style="margin-top:8px"><span class="key">Request and Wait</span> — The orchestrator sends a task and blocks all other processing until the subagent responds. Use this when the next step has a hard dependency on the result of this task. Risk: if the subagent is slow or fails, the entire orchestrator is stalled.</p>
+<p style="margin-top:8px"><span class="key">Callback</span> — The orchestrator sends a task, continues doing other work, and the subagent notifies the orchestrator when complete. Use this when the task is long-running and the orchestrator has other useful work it can do in parallel. This avoids blocking while still getting the result.</p>
+<p style="margin-top:8px"><span class="key">Fan Out / Fan In</span> — The orchestrator fires multiple subagent tasks simultaneously, then waits until all results are collected before proceeding. Use this when tasks are independent of each other and all results are needed before the next step. A time limit guardrail is mandatory — without it, one slow subagent stalls the entire system.</p>`
+  },
+  {
+    title:"Failure Modes",
+    tag:"Orchestration",
+    body:`<p>When a subagent fails, the orchestrator must decide how to respond. This decision must be encoded in designer-defined rules before the system runs. An orchestrator that improvises failure handling at runtime produces unpredictable behavior that cannot be audited or debugged.</p>
+<div class="rule">The orchestrator executes rules. It never makes judgment calls. All failure handling logic is defined by the system designer upfront.</div>
+<p style="margin-top:10px"><span class="key">Partial Completion</span> — The orchestrator delivers the output it has, flags the gap transparently, and continues. Use this when the failure does not make the overall output unusable. Delivering incomplete but honest output is better than delivering nothing.</p>
+<p style="margin-top:8px"><span class="key">Human Escalation</span> — The orchestrator pauses, surfaces the problem clearly, and waits for a human decision. Use this when the failure is ambiguous, high-stakes, or outside the scope of pre-defined rules. The system cannot make a safe autonomous decision.</p>
+<p style="margin-top:8px"><span class="key">Hard Stop</span> — The orchestrator halts all processing and reports failure. Use this when a pre-defined rule states that this specific failure makes the entire output unusable or unsafe to deliver. No partial result is better than a dangerously incorrect one.</p>`
+  },
+  {
+    title:"Execution Strategy",
+    tag:"Design",
+    body:`<p>Execution strategy governs how an agent or orchestrator handles uncertainty about whether upstream steps will succeed. This is a deliberate design decision that trades off speed against cost and wasted work.</p>
+<p style="margin-top:10px"><span class="key">Optimistic Execution</span> — Continue processing assuming upstream tasks will succeed. If an upstream task fails, discard the work that depended on it. This produces faster results for the user because downstream processing happens in parallel rather than waiting. The cost is higher token spend and wasted computation when assumptions are wrong.</p>
+<p style="margin-top:8px"><span class="key">Pessimistic Execution</span> — Wait for upstream confirmation before starting dependent work. Nothing downstream begins until the upstream result is confirmed. This eliminates wasted work but produces slower results for the user.</p>
+<div class="rule">The choice depends on three factors: how often the upstream step fails, how much the user values speed, and how expensive it is to discard wasted downstream work.</div>
+<p style="margin-top:8px">When upstream failure is rare and user experience matters, optimistic wins. When upstream failure is common or downstream work is very expensive, pessimistic wins.</p>`
+  },
+  {
+    title:"Subagent Design",
+    tag:"Orchestration",
+    body:`<p>A subagent is a Claude instance with a narrow, specific task. Good subagent design constrains what the agent can access, how long it can run, and what it does when things go wrong. A subagent that can only do one thing can only fail in predictable ways.</p>
+<div class="rule">Principle of least privilege: give a subagent the minimum access, minimum scope, and minimum runtime needed to complete its specific task. Nothing more.</div>
+<p style="margin-top:10px"><span class="key">Scope Boundary</span> — The subagent is restricted to approved, trusted sources and tools only. It cannot reach outside its defined operational area. This prevents a single compromised subagent from affecting the broader system.</p>
+<p style="margin-top:8px"><span class="key">Data Boundary</span> — The subagent has no access to sensitive data it does not need to complete its task. A flight search subagent has no business seeing payment details or personal identification information.</p>
+<p style="margin-top:8px"><span class="key">Time Boundary</span> — The subagent must respond within a defined time limit or fail gracefully. It cannot run indefinitely. If it cannot complete in time, it reports failure rather than continuing to consume resources.</p>
+<p style="margin-top:8px"><span class="key">Failure Boundary</span> — When the subagent encounters something outside its defined scope, it does not attempt to handle it. It returns the data it has, flags the anomaly, and lets the orchestrator decide. The subagent never improvises outside its role.</p>`
+  },
+];
+
+const watchOuts = [
+  "403 is non-recoverable -- skip, don't retry. Retrying a 403 wastes tokens and time.",
+  "Parallelism requires tasks to be truly independent. If one task depends on another's output, they cannot run in parallel.",
+  "'Simultaneously' is a signal to consider parallelism, not an automatic multi-agent trigger. Always justify.",
+  "Fan Out / Fan In always needs a time limit guardrail. Without it, one slow subagent stalls the entire orchestrator.",
+  "Orchestrator executes rules -- never improvises. All failure handling is designer-defined before the system runs.",
+  "Parallel waiting is not the same as sequential waiting. Fan Out fires all at once; Request and Wait fires one at a time.",
+  "Don't pattern match -- read every exam question fully before selecting an answer.",
+  "Don't let confident pushback shake a correct answer. Verify the reasoning yourself before changing your answer.",
+  "Confidence threshold measures uncertainty, not accuracy. An agent can be confidently wrong and still pass the check.",
+  "Deterministic guarantees like permissions, retries, and compliance belong in application code, not system prompts.",
+];
+
+// ─── STATE ────────────────────────────────────────────────
+const EXAM_DATE = new Date('2026-08-31');
+let weakSpots = JSON.parse(localStorage.getItem('ccaf_weak') || '[]');
+let drillMode = false;
+let drillQueue = [];
+let flashIdx = 0;
+let flashOrder = [...Array(flashcards.length).keys()];
+let flashCorrect = 0, flashWrong = 0;
+let isFlipped = false;
+let quizIdx = 0, quizCorrect = 0, quizAnswered = false;
+let quizStartTime = Date.now();
+let quizOrder = [...Array(quizzes.length).keys()];
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function updateCountdown() {
+  const diff = Math.ceil((EXAM_DATE - new Date()) / 86400000);
+  document.getElementById('daysLeft').textContent = diff > 0 ? diff : '0';
+}
+
+function updateStreak() {
+  const today = new Date().toDateString();
+  const data = JSON.parse(localStorage.getItem('ccaf_streak') || '{"streak":0,"last":""}');
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (data.last === today) { document.getElementById('streakNum').textContent = data.streak; return; }
+  data.streak = data.last === yesterday ? data.streak + 1 : 1;
+  data.last = today;
+  localStorage.setItem('ccaf_streak', JSON.stringify(data));
+  document.getElementById('streakNum').textContent = data.streak;
+}
+
+function renderDailyQ() {
+  const dq = dailyQuestions[Math.floor(Date.now() / 86400000) % dailyQuestions.length];
+  document.getElementById('dailyqText').textContent = dq.q;
+  document.getElementById('dailyqAnswer').textContent = dq.a;
+}
+
+function toggleDailyQ() {
+  const box = document.getElementById('dailyqBox');
+  box.classList.toggle('open');
+  document.getElementById('dailyqHint').textContent = box.classList.contains('open') ? 'Tap to hide ↑' : 'Tap to reveal answer ↓';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['concepts','flash','quiz'][i] === tab));
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+}
+
+function saveWeak() { localStorage.setItem('ccaf_weak', JSON.stringify(weakSpots)); }
+
+function updateWeakCount() {
+  const el = document.getElementById('weakCount');
+  if (el) el.textContent = weakSpots.length ? `(${weakSpots.length})` : '';
+}
+
+function setDrillMode(on) {
+  drillMode = on;
+  document.getElementById('btnAllCards').classList.toggle('active', !on);
+  document.getElementById('btnWeakCards').classList.toggle('active', on);
+  if (on) {
+    if (weakSpots.length === 0) {
+      document.getElementById('noWeakMsg').style.display = 'block';
+      document.getElementById('flashCard').style.display = 'none';
+      document.getElementById('cardActions').style.display = 'none';
+      document.querySelector('.btn-flip').style.display = 'none';
+      return;
+    }
+    drillQueue = shuffle([...weakSpots]);
+    flashIdx = 0;
+  } else {
+    document.getElementById('noWeakMsg').style.display = 'none';
+    document.getElementById('flashCard').style.display = 'block';
+    document.querySelector('.btn-flip').style.display = 'block';
+    flashIdx = 0;
+    shuffle(flashOrder);
+  }
+  flashCorrect = 0; flashWrong = 0;
+  renderFlash();
+}
+
+function getCurrentCard() {
+  if (drillMode) {
+    if (!drillQueue.length) return null;
+    return flashcards.find(f => f.id === drillQueue[flashIdx % drillQueue.length]);
+  }
+  return flashcards[flashOrder[flashIdx]];
+}
+
+function renderFlash() {
+  const card = getCurrentCard();
+  if (!card) return;
+  document.getElementById('cardModeLabel').style.display = drillMode ? 'block' : 'none';
+  document.getElementById('cardTag').textContent = card.tag;
+  document.getElementById('cardQuestion').textContent = card.q;
+  document.getElementById('cardAnswer').textContent = card.a;
+  document.getElementById('flashCard').classList.remove('flipped');
+  document.getElementById('cardActions').style.display = 'none';
+  isFlipped = false;
+  const total = drillMode ? drillQueue.length : flashcards.length;
+  const curr = (flashIdx % total) + 1;
+  document.getElementById('flashFill').style.width = ((flashIdx % total) / total * 100) + '%';
+  document.getElementById('flashProgress').textContent = `Card ${curr} of ${total}${drillMode ? ' (weak)' : ''}`;
+  document.getElementById('flashScore').textContent = `✓ ${flashCorrect} · ✗ ${flashWrong}`;
+  updateWeakCount();
+}
+
+function flipCard() {
+  isFlipped = !isFlipped;
+  document.getElementById('flashCard').classList.toggle('flipped', isFlipped);
+  document.getElementById('cardActions').style.display = isFlipped ? 'flex' : 'none';
+}
+
+function markCard(correct) {
+  const card = getCurrentCard();
+  if (!card) return;
+  if (!correct) {
+    if (!weakSpots.includes(card.id)) { weakSpots.push(card.id); saveWeak(); }
+  } else if (drillMode) {
+    weakSpots = weakSpots.filter(id => id !== card.id);
+    saveWeak();
+    drillQueue = drillQueue.filter(id => id !== card.id);
+    if (!drillQueue.length) {
+      document.getElementById('noWeakMsg').style.display = 'block';
+      document.getElementById('flashCard').style.display = 'none';
+      document.querySelector('.btn-flip').style.display = 'none';
+      document.getElementById('cardActions').style.display = 'none';
+      return;
+    }
+  }
+  if (correct) flashCorrect++; else flashWrong++;
+  flashIdx++;
+  if (!drillMode && flashIdx >= flashcards.length) { flashIdx = 0; shuffle(flashOrder); flashCorrect = 0; flashWrong = 0; }
+  renderFlash();
+}
+
+function renderQuiz() {
+  if (quizIdx >= quizzes.length) { showQuizSummary(); return; }
+  const q = quizzes[quizOrder[quizIdx]];
+  quizAnswered = false;
+  document.getElementById('quizContent').style.display = 'block';
+  document.getElementById('quizSummary').style.display = 'none';
+  document.getElementById('quizQuestion').textContent = q.q;
+  const sc = document.getElementById('quizScenario');
+  if (q.scenario) { sc.textContent = q.scenario; sc.style.display = 'block'; } else sc.style.display = 'none';
+  const opts = document.getElementById('quizOptions');
+  opts.innerHTML = '';
+  q.options.forEach((opt,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-option';
+    btn.textContent = `${['A','B','C','D'][i]}. ${opt}`;
+    btn.onclick = () => selectAnswer(i);
+    opts.appendChild(btn);
+  });
+  document.getElementById('quizExplanation').className = 'explanation';
+  document.getElementById('btnNext').className = 'btn btn-next';
+  document.getElementById('quizFill').style.width = (quizIdx / quizzes.length * 100) + '%';
+  document.getElementById('quizProgress').textContent = `Question ${quizIdx + 1} of ${quizzes.length}`;
+  document.getElementById('quizScore').textContent = `Score: ${quizCorrect}`;
+}
+
+function selectAnswer(idx) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const q = quizzes[quizOrder[quizIdx]];
+  document.querySelectorAll('.quiz-option').forEach((btn,i) => {
+    btn.classList.add('disabled');
+    if (i === q.correct) btn.classList.add('reveal');
+    else if (i === idx && idx !== q.correct) btn.classList.add('wrong');
+  });
+  if (idx === q.correct) quizCorrect++;
+  const exp = document.getElementById('quizExplanation');
+  exp.innerHTML = `<strong>${idx === q.correct ? '✓ Correct' : '✗ Wrong'}</strong> ${q.explanation}`;
+  exp.classList.add('show');
+  document.getElementById('btnNext').classList.add('show');
+  document.getElementById('quizScore').textContent = `Score: ${quizCorrect}`;
+}
+
+function nextQuestion() { quizIdx++; renderQuiz(); }
+
+function showQuizSummary() {
+  document.getElementById('quizContent').style.display = 'none';
+  document.getElementById('quizSummary').style.display = 'block';
+  const pct = Math.round(quizCorrect / quizzes.length * 100);
+  const mins = Math.round((Date.now() - quizStartTime) / 60000);
+  document.getElementById('summaryScore').textContent = pct + '%';
+  document.getElementById('statCorrect').textContent = quizCorrect;
+  document.getElementById('statWrong').textContent = quizzes.length - quizCorrect;
+  document.getElementById('statTime').textContent = mins + 'm';
+  document.getElementById('quizFill').style.width = '100%';
+}
+
+function copyResult() {
+  const pct = Math.round(quizCorrect / quizzes.length * 100);
+  const mins = Math.round((Date.now() - quizStartTime) / 60000);
+  const text = `CCA-F Quiz · ${new Date().toLocaleDateString('en-IN')}\nScore: ${pct}% (${quizCorrect}/${quizzes.length})\nTime: ${mins} mins\nPhase 1 · Sessions 1 & 2`;
+  navigator.clipboard.writeText(text).then(() => {
+    document.querySelector('.copy-btn').textContent = '✓ Copied!';
+    setTimeout(() => document.querySelector('.copy-btn').textContent = 'Copy Result for Log', 2000);
+  });
+}
+
+function restartQuiz() {
+  quizIdx = 0; quizCorrect = 0; quizAnswered = false;
+  quizStartTime = Date.now(); shuffle(quizOrder); renderQuiz();
+}
+
+function renderConcepts() {
+  const list = document.getElementById('conceptList');
+  list.innerHTML = '';
+  concepts.forEach((c,i) => {
+    const div = document.createElement('div');
+    div.className = 'concept-item';
+    div.innerHTML = `<div class="concept-header" onclick="toggleConcept(${i})"><div class="concept-title">${c.title}</div><div class="concept-tag">${c.tag}</div></div><div class="concept-body">${c.body}</div>`;
+    list.appendChild(div);
+  });
+  const wlist = document.getElementById('watchOutList');
+  wlist.innerHTML = '';
+  watchOuts.forEach(w => {
+    const div = document.createElement('div');
+    div.className = 'watch-out';
+    div.textContent = w;
+    wlist.appendChild(div);
+  });
+}
+
+function toggleConcept(i) {
+  document.querySelectorAll('.concept-item')[i].classList.toggle('open');
+}
+
+shuffle(flashOrder); shuffle(quizOrder);
+updateCountdown(); updateStreak(); renderDailyQ();
+renderFlash(); renderConcepts(); renderQuiz(); updateWeakCount();
+</script>
+</body>
+</html>
